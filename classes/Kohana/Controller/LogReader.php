@@ -1,9 +1,9 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 /**
  * LogReader
- * 
+ *
  * LogReader helps you explore Kohana Log files.
- * 
+ *
  * @package     Kohana/LogReader
  * @category    Controllers
  * @author      Milan Magyar <milan.magyar@gmail.com>
@@ -15,12 +15,15 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 	// Messages page
 	public function action_index()
 	{
+
+		Authentication::httpAuth();
+
 		// Get maximum number of messages from config
 		$limit = LogReader::$config['limit'];
-		
+
 		// Get page number from query
 		$current_page = (int) $this->request->query('page');
-		
+
 		if ($current_page < 1)
 		{
 			$current_page = 1;
@@ -35,7 +38,7 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 		$filters['levels'] = $this->request->query('levels');
 		$filters['date-from'] = $this->request->query('date-from');
 		$filters['date-to'] = $this->request->query('date-to');
-		
+
 		// Validate message filter
 		if (!isset($filters['message']['text']) || !is_string($filters['message']['text']))
 		{
@@ -43,7 +46,7 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 		}
 
 		$filters['message']['valid'] = @preg_match('/' . $filters['message']['text'] . '/i', NULL) !== FALSE;
-		
+
 		$query_string .= '&message=' . $filters['message']['text'];
 
 		// Validate levels filter
@@ -60,14 +63,14 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 					$query_string .= '&levels[]=' . $level;
 				}
 			}
-			
+
 			unset($key, $level);
 		}
 		else
 		{
 			$filters['levels'] = array();
 		}
-		
+
 		// Validate date parameters
 		$filters['date-from'] = strtotime($filters['date-from']);
 		$filters['date-to'] = strtotime($filters['date-to']);
@@ -115,22 +118,22 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 		$view->content = View::factory('logreader/messages');
 
 		$view->content->name = 'messages';
-		
+
 		$view->content->filters = $filters;
 
 		// Get log messages
 		$view->content->messages = LogReader::logs($filters['date-from'], $filters['date-to'], $limit, ($current_page - 1) * $limit, $filters);
-		
+
 		$view->content->all_matches = $view->content->messages['all_matches'];
-		
+
 		$view->content->messages = $view->content->messages['messages'];
-		
+
 		$view->content->current_page = $current_page;
-		
+
 		$uri = LogReader_URL::base() . "?" . substr($query_string, 1);
 
 		$view->content->pages = LogReader_URL::pager($current_page, ceil($view->content->all_matches / $limit), $uri . "&page=%(page)s", $uri);
-		
+
 		$this->response->body($view);
 	}
 
@@ -139,16 +142,16 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 	{
 		// Create view for the about page
 		$view = View::factory('logreader/index');
-		
+
 		$view->user = $this->user;
 
 		$view->content = View::factory('logreader/about');
 
 		$view->content->name = 'about';
-		
+
 		$this->response->body($view);
 	}
-	
+
 	// Serving static files
 	public function action_media()
 	{
@@ -165,7 +168,7 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 		{
 			// Check if the browser sent an "if-none-match: <etag>" header, and tell if the file hasn't changed
 			$this->check_cache(sha1($this->request->uri()) . filemtime($file));
-			
+
 			// Send the file content as the response
 			$this->response->body(file_get_contents($file));
 
@@ -181,5 +184,5 @@ class Kohana_Controller_LogReader extends LogReader_Controller
 			$this->response->status(404);
 		}
 	}
-	
+
 }
